@@ -1,0 +1,203 @@
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+// Sylvien Scotland CEN 3024 5/22/2024 Book class to represent a book
+class Book {
+    private final String id;
+    private final String title;
+    private final String author;
+
+    // Constructor
+    public Book(String id, String title, String author) {
+        this.id = id;
+        this.title = title;
+        this.author = author;
+    }
+
+    // Getters
+    public String getId() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    // Override toString method to represent Book as a string
+    @Override
+    public String toString() {
+        return id + "," + title + "," + author;
+    }
+
+    // Method to print book details
+    public void printDetails() {
+        System.out.println("ID: " + id);
+        System.out.println("Title: " + title);
+        System.out.println("Author: " + author);
+    }
+}
+
+// Sylvien Scotland CEN 3024 5/22/2024 Library class to manage the collection of books
+class Library {
+    private final List<Book> collection;
+    private final String filename;
+
+    // Constructor
+    public Library(String filename) {
+        this.collection = new ArrayList<>();
+        this.filename = filename;
+    }
+
+    // Method to add a book to the collection
+    public void addBook(Book book) {
+        collection.add(book);
+    }
+
+    // Method to remove a book from the collection based on ID
+    public void removeBook(String id) {
+        boolean removed = false;
+        for (int i = 0; i < collection.size(); i++) {
+            if (collection.get(i).getId().equals(id)) {
+                collection.remove(i);
+                removed = true;
+                break;
+            }
+        }
+        if (removed) {
+            renumberBooks();
+            saveAllBooksToFile();
+            System.out.println("Book with ID " + id + " removed successfully.");
+        } else {
+            System.out.println("Book with ID " + id + " not found.");
+        }
+    }
+
+    // Method to list all books in the collection
+    public void listBooks() {
+        for (Book book : collection) {
+            book.printDetails();
+        }
+    }
+
+    // Method to load books from a text file
+    public void loadBooksFromFile() {
+        try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 3) {
+                    Book book = new Book(parts[0], parts[1], parts[2]);
+                    addBook(book);
+                } else {
+                    System.out.println("Invalid format in file: " + line);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading file: " + e.getMessage());
+        }
+    }
+
+    // Method to save a book to the text file
+    public void saveBookToFile(Book book) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filename, true))) {
+            bw.write(book.toString());
+            bw.newLine();
+        } catch (IOException e) {
+            System.out.println("Error writing to file: " + e.getMessage());
+        }
+    }
+
+    // Method to save all books to the text file
+    public void saveAllBooksToFile() {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filename))) {
+            for (Book book : collection) {
+                bw.write(book.toString());
+                bw.newLine();
+            }
+        } catch (IOException e) {
+            System.out.println("Error writing to file: " + e.getMessage());
+        }
+    }
+
+    // Method to renumber the book IDs
+    private void renumberBooks() {
+        for (int i = 0; i < collection.size(); i++) {
+            // Since we don't have a setId method, we'll recreate the book object with updated ID
+            Book book = collection.get(i);
+            collection.set(i, new Book(String.valueOf(i + 1), book.getTitle(), book.getAuthor()));
+        }
+    }
+
+    // Method to get the size of the collection
+    public int getCollectionSize() {
+        return collection.size();
+    }
+}
+
+// Sylvien Scotland CEN 3024 5/22/2024 Main class to test the Library Management System
+public class LibraryManagementSystem {
+    public static void main(String[] args) {
+        // Example usage
+        String filename = "books.txt";
+        Library library = new Library(filename);
+
+        // Load books from a text file
+        library.loadBooksFromFile();
+
+        // List books
+        System.out.println("Books in the library:");
+        library.listBooks();
+
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            System.out.println("Choose an option:");
+            System.out.println("1. Add a book");
+            System.out.println("2. Remove a book");
+            System.out.println("3. List all books");
+            System.out.println("4. Exit");
+            System.out.print("Enter your choice: ");
+            String choice = scanner.nextLine();
+
+            switch (choice) {
+                case "1":
+                    System.out.print("Enter book title: ");
+                    String title = scanner.nextLine();
+                    System.out.print("Enter book author: ");
+                    String author = scanner.nextLine();
+
+                    String id = String.valueOf(library.getCollectionSize() + 1);
+                    Book newBook = new Book(id, title, author);
+                    library.addBook(newBook);
+                    library.saveBookToFile(newBook);
+
+                    System.out.println("Book added successfully.");
+                    break;
+                case "2":
+                    System.out.print("Enter the ID of the book you want to remove: ");
+                    String idToRemove = scanner.nextLine();
+                    library.removeBook(idToRemove);
+                    break;
+                case "3":
+                    System.out.println("Books in the library:");
+                    library.listBooks();
+                    break;
+                case "4":
+                    System.out.println("Exiting the program.");
+                    scanner.close();
+                    System.exit(0);
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+            }
+        }
+    }
+}
