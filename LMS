@@ -1,23 +1,35 @@
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Scanner;
 
-// Sylvien Scotland CEN 3024 5/22/2024 Book class to represent a book
-class Book {
+/** Sylvien Scotland CEN 3024C 6/15/24
+ * Book class to represent a book in the library.
+ * This class includes details like the book's ID, title, author, check-out status, and due date.
+ * It provides methods to check out and check in a book, and also methods to retrieve book details.
+ */
+class Book implements Serializable {
     private final String id;
     private final String title;
     private final String author;
+    private boolean isCheckedOut;
+    private String dueDate;
 
-    // Constructor
+    /**
+     * Constructor to initialize a book with ID, title, and author.
+     *
+     * @param id     The ID of the book.
+     * @param title  The title of the book.
+     * @param author The author of the book.
+     */
     public Book(String id, String title, String author) {
         this.id = id;
         this.title = title;
         this.author = author;
+        this.isCheckedOut = false;
+        this.dueDate = "null";
     }
 
     // Getters
@@ -33,37 +45,126 @@ class Book {
         return author;
     }
 
-    // Override toString method to represent Book as a string
-    @Override
-    public String toString() {
-        return id + "," + title + "," + author;
+    public boolean isCheckedOut() {
+        return isCheckedOut;
     }
 
-    // Method to print book details
+    public String getDueDate() {
+        return dueDate;
+    }
+
+    // Setters
+    public void setCheckedOut(boolean checkedOut) {
+        isCheckedOut = checkedOut;
+    }
+
+    public void setDueDate(String dueDate) {
+        this.dueDate = dueDate;
+    }
+
+    /**
+     * Method to check out the book.
+     * Sets the status to checked out and calculates the due date as 4 weeks from the current date.
+     */
+    public void checkOut() {
+        this.isCheckedOut = true;
+        // Set the due date to 4 weeks from the current date
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.WEEK_OF_YEAR, 4);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        this.dueDate = sdf.format(calendar.getTime());
+    }
+
+    /**
+     * Method to check in the book.
+     * Resets the status to available and the due date to null.
+     */
+    public void checkIn() {
+        this.isCheckedOut = false;
+        this.dueDate = "null";
+    }
+
+    /**
+     * Method to represent the book as a string.
+     *
+     * @return A string representation of the book's details.
+     */
+    @Override
+    public String toString() {
+        return id + "," + title + "," + author + "," + (isCheckedOut ? "Checked Out" : "Available") + "," + dueDate;
+    }
+
+    /**
+     * Method to print book details to the console.
+     */
     public void printDetails() {
         System.out.println("ID: " + id);
         System.out.println("Title: " + title);
         System.out.println("Author: " + author);
+        System.out.println("Status: " + (isCheckedOut ? "Checked Out" : "Available"));
+        System.out.println("Due Date: " + dueDate);
     }
 }
 
-// Sylvien Scotland CEN 3024 5/22/2024 Library class to manage the collection of books
+/** Sylvien Scotland CEN 3024C 6/15/24
+ * Library class to manage a collection of books.
+ * This class handles adding, removing, listing, checking out, and checking in books.
+ * It also manages persistence by loading and saving books to a text file.
+ */
 class Library {
     private final List<Book> collection;
     private final String filename;
 
-    // Constructor
+    /**
+     * Constructor to initialize the library with a specified file.
+     *
+     * @param filename The name of the file used for persistence.
+     */
     public Library(String filename) {
         this.collection = new ArrayList<>();
         this.filename = filename;
     }
 
-    // Method to add a book to the collection
+    /**
+     * Method to add a book to the collection and save it to the file.
+     *
+     * @param book The book to be added.
+     */
     public void addBook(Book book) {
         collection.add(book);
+        saveAllBooksToFile();
     }
 
-    // Method to remove a book from the collection based on ID
+    /**
+     * Method to add books from a comma-delimited text file.
+     *
+     * @param inputFilename The name of the file to read books from.
+     */
+    public void addBooksFromFile(String inputFilename) {
+        try (BufferedReader br = new BufferedReader(new FileReader(inputFilename))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 3 || parts.length == 4) {
+                    Book book = new Book(String.valueOf(collection.size() + 1), parts[0], parts[1]);
+                    if (parts.length == 4 && parts[3].equalsIgnoreCase("Checked Out")) {
+                        book.checkOut();
+                    }
+                    addBook(book);
+                } else {
+                    System.out.println("Invalid format in file: " + line);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading file: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Method to remove a book from the collection based on ID.
+     *
+     * @param id The ID of the book to be removed.
+     */
     public void removeBook(String id) {
         boolean removed = false;
         for (int i = 0; i < collection.size(); i++) {
@@ -82,21 +183,52 @@ class Library {
         }
     }
 
-    // Method to list all books in the collection
+    /**
+     * Method to remove a book from the collection based on title.
+     *
+     * @param title The title of the book to be removed.
+     */
+    public void removeBookByTitle(String title) {
+        boolean removed = false;
+        for (int i = 0; i < collection.size(); i++) {
+            if (collection.get(i).getTitle().equalsIgnoreCase(title)) {
+                collection.remove(i);
+                removed = true;
+                break;
+            }
+        }
+        if (removed) {
+            renumberBooks();
+            saveAllBooksToFile();
+            System.out.println("Book with title '" + title + "' removed successfully.");
+        } else {
+            System.out.println("Book with title '" + title + "' not found.");
+        }
+    }
+
+    /**
+     * Method to list all books in the collection.
+     */
     public void listBooks() {
         for (Book book : collection) {
             book.printDetails();
         }
     }
 
-    // Method to load books from a text file
+    /**
+     * Method to load books from the main text file.
+     */
     public void loadBooksFromFile() {
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split(",");
-                if (parts.length == 3) {
+                if (parts.length == 5) {
                     Book book = new Book(parts[0], parts[1], parts[2]);
+                    if (parts[3].equalsIgnoreCase("Checked Out")) {
+                        book.setCheckedOut(true);
+                        book.setDueDate(parts[4]);
+                    }
                     addBook(book);
                 } else {
                     System.out.println("Invalid format in file: " + line);
@@ -107,7 +239,11 @@ class Library {
         }
     }
 
-    // Method to save a book to the text file
+    /**
+     * Method to save a book to the text file.
+     *
+     * @param book The book to be saved.
+     */
     public void saveBookToFile(Book book) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filename, true))) {
             bw.write(book.toString());
@@ -117,7 +253,9 @@ class Library {
         }
     }
 
-    // Method to save all books to the text file
+    /**
+     * Method to save all books to the text file.
+     */
     public void saveAllBooksToFile() {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filename))) {
             for (Book book : collection) {
@@ -129,7 +267,9 @@ class Library {
         }
     }
 
-    // Method to renumber the book IDs
+    /**
+     * Method to renumber the book IDs.
+     */
     private void renumberBooks() {
         for (int i = 0; i < collection.size(); i++) {
             // Since we don't have a setId method, we'll recreate the book object with updated ID
@@ -138,20 +278,62 @@ class Library {
         }
     }
 
-    // Method to get the size of the collection
+    /**
+     * Method to get the size of the collection.
+     *
+     * @return The size of the collection.
+     */
     public int getCollectionSize() {
         return collection.size();
     }
+
+    /**
+     * Method to check out a book by title.
+     *
+     * @param title The title of the book to be checked out.
+     */
+    public void checkOutBook(String title) {
+        for (Book book : collection) {
+            if (book.getTitle().equalsIgnoreCase(title) && !book.isCheckedOut()) {
+                book.checkOut();
+                saveAllBooksToFile();
+                System.out.println("Book with title '" + title + "' checked out successfully. Due date: " + book.getDueDate());
+                return;
+            }
+        }
+        System.out.println("Book with title '" + title + "' not found or already checked out.");
+    }
+
+    /**
+     * Method to check in a book by title.
+     *
+     * @param title The title of the book to be checked in.
+     */
+    public void checkInBook(String title) {
+        for (Book book : collection) {
+            if (book.getTitle().equalsIgnoreCase(title) && book.isCheckedOut()) {
+                book.checkIn();
+                saveAllBooksToFile();
+                System.out.println("Book with title '" + title + "' checked in successfully.");
+                return;
+            }
+        }
+        System.out.println("Book with title '" + title + "' not found or already checked in.");
+    }
 }
 
-// Sylvien Scotland CEN 3024 5/22/2024 Main class to test the Library Management System
+/** Sylvien Scotland CEN 3024C 6/15/24
+ * Main class to test the Library Management System.
+ * The objective of this program is to manage a library system where users can add, remove, check out, and check in books.
+ * The system will read from and write to a text file to persist the library data.
+ */
 public class LibraryManagementSystem {
     public static void main(String[] args) {
         // Example usage
         String filename = "books.txt";
         Library library = new Library(filename);
 
-        // Load books from a text file
+        // Load books from the main text file
         library.loadBooksFromFile();
 
         // List books
@@ -161,37 +343,58 @@ public class LibraryManagementSystem {
         Scanner scanner = new Scanner(System.in);
         while (true) {
             System.out.println("Choose an option:");
-            System.out.println("1. Add a book");
-            System.out.println("2. Remove a book");
-            System.out.println("3. List all books");
-            System.out.println("4. Exit");
+            System.out.println("1. Add books from file");
+            System.out.println("2. Add a book manually");
+            System.out.println("3. Remove a book by ID");
+            System.out.println("4. Remove a book by title");
+            System.out.println("5. Check out a book by title");
+            System.out.println("6. Check in a book by title");
+            System.out.println("7. List all books");
+            System.out.println("8. Exit");
             System.out.print("Enter your choice: ");
             String choice = scanner.nextLine();
 
             switch (choice) {
                 case "1":
+                    System.out.print("Enter the filename to read books from: ");
+                    String inputFilename = scanner.nextLine();
+                    library.addBooksFromFile(inputFilename);
+                    break;
+                case "2":
                     System.out.print("Enter book title: ");
                     String title = scanner.nextLine();
                     System.out.print("Enter book author: ");
                     String author = scanner.nextLine();
-
                     String id = String.valueOf(library.getCollectionSize() + 1);
                     Book newBook = new Book(id, title, author);
                     library.addBook(newBook);
-                    library.saveBookToFile(newBook);
-
                     System.out.println("Book added successfully.");
                     break;
-                case "2":
+                case "3":
                     System.out.print("Enter the ID of the book you want to remove: ");
                     String idToRemove = scanner.nextLine();
                     library.removeBook(idToRemove);
                     break;
-                case "3":
+                case "4":
+                    System.out.print("Enter the title of the book you want to remove: ");
+                    String titleToRemove = scanner.nextLine();
+                    library.removeBookByTitle(titleToRemove);
+                    break;
+                case "5":
+                    System.out.print("Enter the title of the book you want to check out: ");
+                    String titleToCheckOut = scanner.nextLine();
+                    library.checkOutBook(titleToCheckOut);
+                    break;
+                case "6":
+                    System.out.print("Enter the title of the book you want to check in: ");
+                    String titleToCheckIn = scanner.nextLine();
+                    library.checkInBook(titleToCheckIn);
+                    break;
+                case "7":
                     System.out.println("Books in the library:");
                     library.listBooks();
                     break;
-                case "4":
+                case "8":
                     System.out.println("Exiting the program.");
                     scanner.close();
                     System.exit(0);
