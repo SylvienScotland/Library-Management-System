@@ -1,0 +1,92 @@
+package com.library;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.io.FileWriter;
+import java.io.IOException;
+
+/**
+ * Unit tests for the Library Management System.
+ */
+public class LibraryManagementSystemTest {
+    private Library library;
+    private static final String TEST_FILE = "test_books.txt";
+
+    /**
+     * Set up the library and test file before each test.
+     */
+    @BeforeEach
+    public void setUp() {
+        // Clear the test file
+        try (FileWriter fw = new FileWriter(TEST_FILE, false)) {
+            fw.write("");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Initialize the library with the test file
+        library = new Library(TEST_FILE);
+    }
+
+    /**
+     * Test that a book can be added to the library.
+     */
+    @Test
+    public void testAddBook() {
+        Book book = new Book("1", "Test Title", "Test Author");
+        library.addBook(book);
+        assertEquals(1, library.getCollectionSize());
+        assertEquals("Test Title", library.getCollection().get(0).getTitle());
+    }
+
+    /**
+     * Test that a book can be removed from the library by ID.
+     */
+    @Test
+    public void testRemoveBookById() {
+        Book book = new Book("1", "Test Title", "Test Author");
+        library.addBook(book);
+        library.removeBook("1");
+        assertEquals(0, library.getCollectionSize());
+    }
+
+    /**
+     * Test that a book can be removed from the library by title.
+     */
+    @Test
+    public void testRemoveBookByTitle() {
+        Book book = new Book("1", "Test Title", "Test Author");
+        library.addBook(book);
+        library.removeBookByTitle("Test Title");
+        assertEquals(0, library.getCollectionSize());
+    }
+
+    /**
+     * Test that a book can be checked out.
+     */
+    @Test
+    public void testCheckOutBook() {
+        Book book = new Book("1", "Test Title", "Test Author");
+        library.addBook(book);
+        library.checkOutBook("Test Title");
+        assertTrue(library.getCollection().get(0).isCheckedOut());
+        assertNotEquals("null", library.getCollection().get(0).getDueDate());
+    }
+
+    /**
+     * Test that a book can be checked in.
+     */
+    @Test
+    public void testCheckInBook() {
+        Book book = new Book("1", "Test Title", "Test Author");
+        library.addBook(book);
+        library.checkOutBook("Test Title");
+        library.checkInBook("Test Title");
+        assertFalse(library.getCollection().get(0).isCheckedOut());
+        assertEquals("null", library.getCollection().get(0).getDueDate());
+    }
+}
