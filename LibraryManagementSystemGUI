@@ -1,0 +1,110 @@
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+public class LibraryManagementSystemGUI extends Application {
+    private Library library;
+    private TextArea outputArea;
+
+    @Override
+    public void start(Stage primaryStage) {
+        // Initialize the library
+        library = new Library("books.txt");
+        library.loadBooksFromFile();
+
+        // Create UI elements
+        Label filenameLabel = new Label("Enter filename:");
+        TextField filenameField = new TextField();
+        Button loadButton = new Button("Load Books");
+
+        Label idLabel = new Label("Enter book ID to remove:");
+        TextField idField = new TextField();
+        Button removeByIdButton = new Button("Remove by ID");
+
+        Label titleLabel = new Label("Enter book title to remove:");
+        TextField titleField = new TextField();
+        Button removeByTitleButton = new Button("Remove by Title");
+
+        Label checkoutLabel = new Label("Enter book title to check out:");
+        TextField checkoutField = new TextField();
+        Button checkoutButton = new Button("Check Out");
+
+        Label checkinLabel = new Label("Enter book title to check in:");
+        TextField checkinField = new TextField();
+        Button checkinButton = new Button("Check In");
+
+        Button listBooksButton = new Button("List All Books");
+        Button exitButton = new Button("Exit");
+
+        outputArea = new TextArea();
+        outputArea.setEditable(false);
+
+        // Add action handlers
+        loadButton.setOnAction(e -> {
+            String filename = filenameField.getText();
+            library.addBooksFromFile(filename);
+            outputArea.setText("Books loaded from " + filename + "\n");
+            listBooks();
+        });
+
+        removeByIdButton.setOnAction(e -> {
+            String id = idField.getText();
+            library.removeBook(id);
+            outputArea.setText("Book with ID " + id + " removed.\n");
+            listBooks();
+        });
+
+        removeByTitleButton.setOnAction(e -> {
+            String title = titleField.getText();
+            library.removeBookByTitle(title);
+            outputArea.setText("Book with title '" + title + "' removed.\n");
+            listBooks();
+        });
+
+        checkoutButton.setOnAction(e -> {
+            String title = checkoutField.getText();
+            library.checkOutBook(title);
+            outputArea.setText("Book with title '" + title + "' checked out.\n");
+            listBooks();
+        });
+
+        checkinButton.setOnAction(e -> {
+            String title = checkinField.getText();
+            library.checkInBook(title);
+            outputArea.setText("Book with title '" + title + "' checked in.\n");
+            listBooks();
+        });
+
+        listBooksButton.setOnAction(e -> listBooks());
+
+        exitButton.setOnAction(e -> primaryStage.close());
+
+        // Arrange UI elements in a layout
+        VBox layout = new VBox(10, filenameLabel, filenameField, loadButton,
+                idLabel, idField, removeByIdButton,
+                titleLabel, titleField, removeByTitleButton,
+                checkoutLabel, checkoutField, checkoutButton,
+                checkinLabel, checkinField, checkinButton,
+                listBooksButton, exitButton, outputArea);
+
+        // Create and set the scene
+        Scene scene = new Scene(layout, 600, 600);
+        primaryStage.setScene(scene);
+        primaryStage.setTitle("Library Management System");
+        primaryStage.show();
+    }
+
+    private void listBooks() {
+        StringBuilder sb = new StringBuilder();
+        for (Book book : library.getBooks()) {
+            sb.append(book).append("\n");
+        }
+        outputArea.setText(sb.toString());
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+}
