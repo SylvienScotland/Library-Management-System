@@ -4,6 +4,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+//Sylvien Scotland CEN 3024C 7/03/24
 public class LibraryManagementSystemGUI extends Application {
     private Library library;
     private TextArea outputArea;
