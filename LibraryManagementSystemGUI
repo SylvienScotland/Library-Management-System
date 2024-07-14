@@ -4,28 +4,37 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-//Sylvien Scotland CEN 3024C 7/03/24
+import java.sql.SQLException;
+import java.util.List;
+
 public class LibraryManagementSystemGUI extends Application {
     private Library library;
     private TextArea outputArea;
 
     @Override
     public void start(Stage primaryStage) {
-        // Initialize the library
-        library = new Library("books.txt");
-        library.loadBooksFromFile();
+        try {
+            library = new Library("jdbc:sqlite:C:\\Users\\truga\\Downloads\\sqlite-tools-win-x64-3460000\\LibraryDB.db");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return;
+        }
 
-        // Create UI elements
-        Label filenameLabel = new Label("Enter filename:");
-        TextField filenameField = new TextField();
-        Button loadButton = new Button("Load Books");
+        Label filenameLabel = new Label("Enter book details:");
+        TextField titleField = new TextField();
+        titleField.setPromptText("Title");
+        TextField authorField = new TextField();
+        authorField.setPromptText("Author");
+        TextField genreField = new TextField();
+        genreField.setPromptText("Genre");
+        Button addButton = new Button("Add Book");
 
-        Label idLabel = new Label("Enter book ID to remove:");
+        Label idLabel = new Label("Enter book barcode to remove:");
         TextField idField = new TextField();
-        Button removeByIdButton = new Button("Remove by ID");
+        Button removeByIdButton = new Button("Remove by Barcode");
 
         Label titleLabel = new Label("Enter book title to remove:");
-        TextField titleField = new TextField();
+        TextField removeTitleField = new TextField();
         Button removeByTitleButton = new Button("Remove by Title");
 
         Label checkoutLabel = new Label("Enter book title to check out:");
@@ -42,23 +51,26 @@ public class LibraryManagementSystemGUI extends Application {
         outputArea = new TextArea();
         outputArea.setEditable(false);
 
-        // Add action handlers
-        loadButton.setOnAction(e -> {
-            String filename = filenameField.getText();
-            library.addBooksFromFile(filename);
-            outputArea.setText("Books loaded from " + filename + "\n");
+        addButton.setOnAction(e -> {
+            String title = titleField.getText();
+            String author = authorField.getText();
+            String genre = genreField.getText();
+            String barcode = String.valueOf(System.currentTimeMillis());
+            Book book = new Book(barcode, title, author, genre, false, null);
+            library.addBook(book);
+            outputArea.setText("Book added: " + book.toString() + "\n");
             listBooks();
         });
 
         removeByIdButton.setOnAction(e -> {
             String id = idField.getText();
             library.removeBook(id);
-            outputArea.setText("Book with ID " + id + " removed.\n");
+            outputArea.setText("Book with barcode " + id + " removed.\n");
             listBooks();
         });
 
         removeByTitleButton.setOnAction(e -> {
-            String title = titleField.getText();
+            String title = removeTitleField.getText();
             library.removeBookByTitle(title);
             outputArea.setText("Book with title '" + title + "' removed.\n");
             listBooks();
@@ -82,15 +94,13 @@ public class LibraryManagementSystemGUI extends Application {
 
         exitButton.setOnAction(e -> primaryStage.close());
 
-        // Arrange UI elements in a layout
-        VBox layout = new VBox(10, filenameLabel, filenameField, loadButton,
+        VBox layout = new VBox(10, filenameLabel, titleField, authorField, genreField, addButton,
                 idLabel, idField, removeByIdButton,
-                titleLabel, titleField, removeByTitleButton,
+                titleLabel, removeTitleField, removeByTitleButton,
                 checkoutLabel, checkoutField, checkoutButton,
                 checkinLabel, checkinField, checkinButton,
                 listBooksButton, exitButton, outputArea);
 
-        // Create and set the scene
         Scene scene = new Scene(layout, 600, 600);
         primaryStage.setScene(scene);
         primaryStage.setTitle("Library Management System");
@@ -98,11 +108,12 @@ public class LibraryManagementSystemGUI extends Application {
     }
 
     private void listBooks() {
-        StringBuilder sb = new StringBuilder();
-        for (Book book : library.getBooks()) {
-            sb.append(book).append("\n");
+        StringBuilder output = new StringBuilder("Books in the library:\n");
+        List<Book> books = library.getBooks();
+        for (Book book : books) {
+            output.append(book.toString()).append("\n");
         }
-        outputArea.setText(sb.toString());
+        outputArea.setText(output.toString());
     }
 
     public static void main(String[] args) {
