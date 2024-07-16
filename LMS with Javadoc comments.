@@ -23,6 +23,15 @@ class Book {
     private boolean checkedOut;
     private String dueDate;
 
+    /**
+     * Constructs a new Book.
+     * @param id the unique identifier for the book.
+     * @param title the title of the book.
+     * @param author the author of the book.
+     * @param genre the genre of the book.
+     * @param checkedOut the check-out status of the book.
+     * @param dueDate the due date for returning the book, if checked out.
+     */
     public Book(String id, String title, String author, String genre, boolean checkedOut, String dueDate) {
         this.id = id;
         this.title = title;
@@ -32,26 +41,50 @@ class Book {
         this.dueDate = dueDate;
     }
 
+    /**
+     * Gets the ID of the book.
+     * @return the book ID.
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * Gets the title of the book.
+     * @return the book title.
+     */
     public String getTitle() {
         return title;
     }
 
+    /**
+     * Gets the author of the book.
+     * @return the book author.
+     */
     public String getAuthor() {
         return author;
     }
 
+    /**
+     * Gets the genre of the book.
+     * @return the book genre.
+     */
     public String getGenre() {
         return genre;
     }
 
+    /**
+     * Checks if the book is checked out.
+     * @return true if the book is checked out, false otherwise.
+     */
     public boolean isCheckedOut() {
         return checkedOut;
     }
 
+    /**
+     * Gets the due date for returning the book.
+     * @return the due date as a string.
+     */
     public String getDueDate() {
         return dueDate;
     }
@@ -70,18 +103,27 @@ class Book {
 }
 
 
-/** Sylvien Scotland CEN 3024C 7/14/24
+/** Sylvien Scotland CEN 3024C 7/16/24
  * Library class to manage a collection of books.
  * This class handles adding, removing, listing, checking out, and checking in books.
- * It also manages persistence by loading and saving books to a text file.
+ * It manages persistence by using a SQLite database.
  */
 class Library {
     private final Connection connection;
 
+    /**
+     * Constructs a new Library connected to the specified database URL.
+     * @param dbUrl the database URL.
+     * @throws SQLException if a database access error occurs.
+     */
     public Library(String dbUrl) throws SQLException {
         this.connection = DriverManager.getConnection(dbUrl);
     }
 
+    /**
+     * Adds a book to the library.
+     * @param book the book to add.
+     */
     public void addBook(Book book) {
         String query = "INSERT INTO books (barcode, title, author, genre, status, due_date) VALUES (?, ?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
@@ -97,6 +139,10 @@ class Library {
         }
     }
 
+    /**
+     * Removes a book from the library by its barcode.
+     * @param barcode the barcode of the book to remove.
+     */
     public void removeBook(String barcode) {
         String query = "DELETE FROM books WHERE barcode = ?";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
@@ -107,6 +153,10 @@ class Library {
         }
     }
 
+    /**
+     * Removes a book from the library by its title.
+     * @param title the title of the book to remove.
+     */
     public void removeBookByTitle(String title) {
         String query = "DELETE FROM books WHERE title = ?";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
@@ -117,6 +167,10 @@ class Library {
         }
     }
 
+    /**
+     * Gets a list of all books in the library.
+     * @return a list of books.
+     */
     public List<Book> getBooks() {
         List<Book> books = new ArrayList<>();
         String query = "SELECT * FROM books";
@@ -139,8 +193,12 @@ class Library {
         return books;
     }
 
-
-    public void checkOutBook(String title) {
+    /**
+     * Checks out a book from the library by its title.
+     * @param title the title of the book to check out.
+     * @return a message indicating the result of the operation.
+     */
+    public String checkOutBook(String title) {
         String query = "UPDATE books SET status = 'Checked Out', due_date = ? WHERE title = ? AND status = 'Checked In'";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -149,34 +207,41 @@ class Library {
             stmt.setString(2, title);
             int rowsUpdated = stmt.executeUpdate();
             if (rowsUpdated == 0) {
-                System.out.println("Book with title '" + title + "' not found or already checked out.");
+                return "Book with title '" + title + "' not found or already checked out.";
             } else {
-                System.out.println("Book with title '" + title + "' checked out successfully.");
+                return "Book with title '" + title + "' checked out successfully.";
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            return "Error checking out the book.";
         }
     }
 
-    public void checkInBook(String title) {
+    /**
+     * Checks in a book to the library by its title.
+     * @param title the title of the book to check in.
+     * @return a message indicating the result of the operation.
+     */
+    public String checkInBook(String title) {
         String query = "UPDATE books SET status = 'Checked In', due_date = NULL WHERE title = ? AND status = 'Checked Out'";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setString(1, title);
             int rowsUpdated = stmt.executeUpdate();
             if (rowsUpdated == 0) {
-                System.out.println("Book with title '" + title + "' not found or already checked in.");
+                return "Book with title '" + title + "' not found or already checked in.";
             } else {
-                System.out.println("Book with title '" + title + "' checked in successfully.");
+                return "Book with title '" + title + "' checked in successfully.";
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            return "Error checking in the book.";
         }
     }
 }
-/** Sylvien Scotland CEN 3024C 7/14/24
+/** Sylvien Scotland CEN 3024C 7/16/24
  * Main class to test the Library Management System.
  * The objective of this program is to manage a library system where users can add, remove, check out, and check in books.
- * The system will read from and write to a text file to persist the library data.
+ * The system will read from and write to a SQLite database to persist the library data.
  */
 public class LibraryManagementSystem {
     public static void main(String[] args) {
@@ -226,12 +291,12 @@ public class LibraryManagementSystem {
                 case "4":
                     System.out.print("Enter book title: ");
                     String titleToCheckOut = scanner.nextLine();
-                    library.checkOutBook(titleToCheckOut);
+                    System.out.println(library.checkOutBook(titleToCheckOut));
                     break;
                 case "5":
                     System.out.print("Enter book title: ");
                     String titleToCheckIn = scanner.nextLine();
-                    library.checkInBook(titleToCheckIn);
+                    System.out.println(library.checkInBook(titleToCheckIn));
                     break;
                 case "6":
                     List<Book> books = library.getBooks();
