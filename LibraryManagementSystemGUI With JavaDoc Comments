@@ -7,6 +7,10 @@ import javafx.stage.Stage;
 import java.sql.SQLException;
 import java.util.List;
 
+/**
+ * LibraryManagementSystemGUI class to provide a graphical user interface for the library management system.
+ * Users can interact with the library through buttons and text fields.
+ */
 public class LibraryManagementSystemGUI extends Application {
     private Library library;
     private TextArea outputArea;
@@ -78,15 +82,13 @@ public class LibraryManagementSystemGUI extends Application {
 
         checkoutButton.setOnAction(e -> {
             String title = checkoutField.getText();
-            library.checkOutBook(title);
-            outputArea.setText("Book with title '" + title + "' checked out.\n");
+            outputArea.setText(library.checkOutBook(title));
             listBooks();
         });
 
         checkinButton.setOnAction(e -> {
             String title = checkinField.getText();
-            library.checkInBook(title);
-            outputArea.setText("Book with title '" + title + "' checked in.\n");
+            outputArea.setText(library.checkInBook(title));
             listBooks();
         });
 
